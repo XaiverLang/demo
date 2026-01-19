@@ -14,8 +14,7 @@
 
     // 页面简繁转换状态（将在init中根据页面内容初始化）
     // 在此段代码中， true代表繁体， false代表简体
-    let pageOriginalSorT =null;
-    let pageCurrentSorT = null;
+
     let pageTraditional = null;
 
     // 简繁转换器实例
@@ -94,8 +93,6 @@
 
             console.log(`简繁检测结果: s2t差异=${s2tDiff.toFixed(3)}, t2s差异=${t2sDiff.toFixed(3)}`);
 
-            // 如果简体转繁体变化较小，说明原始是简体
-            // 如果繁体转简体变化较小，说明原始是繁体
             // 添加阈值，避免微小差异导致的误判
             // 样品转繁的差异大于转简的差异 说明为简体
             // 样品转简的差异大于转繁的差异 说明为繁体
