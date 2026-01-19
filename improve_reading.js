@@ -120,7 +120,7 @@
         }
 
         // 常见繁体字符（在简体中不常见或写法不同）
-        const traditionalChars = ['麼', '裡', '後', '麵', '發', '鬱', '鬱', '龜', '體', '國', '學', '會', '麼'];
+        const traditionalChars = ['麼', '裡', '後', '麵', '發', '鬱', '龜', '體', '國', '學', '會'];
         // 常见简体字符（在繁体中不常见或写法不同）
         const simplifiedChars = ['么', '里', '后', '面', '发', '郁', '龟', '体', '国', '学', '会'];
 
@@ -239,7 +239,7 @@
 
         const textNodes = [];
         let node;
-        while (node = walker.nextNode()) {
+        while ((node = walker.nextNode())) {
             if (node.textContent.trim()) {
                 textNodes.push(node);
             }
@@ -288,8 +288,7 @@
                 pageTraditional = true; // 默认繁体
             }
             // 依据页面简繁 初始化参数
-            pageOriginalSorT = pageTraditional;
-            pageCurrentSorT = pageTraditional;
+            // pageOriginalSorT 和 pageCurrentSorT 变量已移除，使用 pageTraditional 替代
 
             // 6. 获取小说标题
             const titleElement = document.getElementById('thread_subject');
@@ -478,16 +477,6 @@
         // 设置状态属性
         contentDiv.setAttribute('data-traditional', isTraditional.toString());
 
-        // 如果页面是繁体，需要转换内容
-        //if (isTraditional) {
-            // 转换整个内容为繁体
-        //    const convertedText = await convertChinese(content, true);
-
-        //    contentDiv.textContent = convertedText;
-        //} else {
-            // 页面是简体，直接使用原始内容
-        //    contentDiv.textContent = content;
-        //}
         // 初始状态 无需繁简转换，只需显示当前内容
         contentDiv.textContent = content;
 
@@ -928,7 +917,6 @@
         const isTraditional = contentDiv.getAttribute('data-traditional') === 'true';
 
         // 获取当前文本内容
-        //
         const originalTitle = contentTitle.textContent;
         const originalText = contentDiv.textContent;
 
@@ -991,6 +979,19 @@
     }
 
     /**
+     * 获取当前简繁状态（处理null情况）
+     * @returns {boolean} true: 繁体, false: 简体
+     */
+    function getCurrentTraditionalState() {
+        if (pageTraditional === null) {
+            // 如果pageTraditional为null，使用默认值（繁体）
+            console.log('getCurrentTraditionalState: pageTraditional为null，使用默认值（繁体）');
+            return true;
+        }
+        return pageTraditional;
+    }
+
+    /**
      * 更新简繁转换按钮文字
      */
     function updateConvertButtonText() {
@@ -1001,16 +1002,12 @@
             return;
         }
 
-        // 检查pageTraditional状态
-        if (pageTraditional === null) {
-            // 如果pageTraditional为null，使用默认值（繁体）
-            console.log('updateConvertButtonText: pageTraditional为null，使用默认值（繁体）');
-            pageTraditional = true;
-        }
+        // 获取当前状态
+        const currentState = getCurrentTraditionalState();
 
         // 根据当前状态显示下一次转换的方向
-        const newText = pageTraditional ? '繁体→简体' : '简体→繁体';
-        console.log(`updateConvertButtonText: 当前状态=${pageTraditional ? '繁体' : '简体'}, 按钮文字="${newText}"`);
+        const newText = currentState ? '繁体→简体' : '简体→繁体';
+        console.log(`updateConvertButtonText: 当前状态=${currentState ? '繁体' : '简体'}, 按钮文字="${newText}"`);
 
         if (convertBtn.textContent !== newText) {
             convertBtn.textContent = newText;
@@ -1018,6 +1015,197 @@
         } else {
             console.log(`updateConvertButtonText: 按钮文字无需更新，当前已是"${newText}"`);
         }
+    }
+
+    // ==================== 新增：配置常量 ====================
+    const CONFIG = {
+        DETECTION: {
+            SAMPLE_SIZE: 200,
+            DIFF_THRESHOLD: 0.05,
+            MIN_TEXT_LENGTH: 10,
+            MIN_HEURISTIC_LENGTH: 5
+        },
+        CHINESE_CHARS: {
+            TRADITIONAL: ['麼', '裡', '後', '麵', '發', '鬱', '龜', '體', '國', '學', '會'],
+            SIMPLIFIED: ['么', '里', '后', '面', '发', '郁', '龟', '体', '国', '学', '会']
+        }
+    };
+
+    // ==================== 新增：工具函数 ====================
+    const Utils = {
+        /**
+         * 批量移除DOM元素
+         * @param {string} selector - CSS选择器
+         * @returns {number} 移除的元素数量
+         */
+        batchRemoveElements(selector) {
+            const elements = document.querySelectorAll(selector);
+            console.log(`Utils: 找到 ${elements.length} 个元素: ${selector}`);
+
+            elements.forEach(element => {
+                if (element.parentNode) {
+                    element.parentNode.removeChild(element);
+                }
+            });
+
+            return elements.length;
+        },
+
+        /**
+         * 清理文件名中的非法字符
+         * @param {string} filename - 原始文件名
+         * @returns {string} 清理后的文件名
+         */
+        sanitizeFilename(filename) {
+            return filename.replace(/[\\/:*?"<>|]/g, '_');
+        }
+    };
+
+    // ==================== 改进：移除隐藏元素函数 ====================
+    function removeHiddenSpans() {
+        const count = Utils.batchRemoveElements('span[style*="display:none"]');
+        console.log(`改进版：移除了 ${count} 个隐藏的span元素`);
+    }
+
+    function removeJammerFonts() {
+        const count = Utils.batchRemoveElements('font.jammer, font[class*="jammer"], font[class~="jammer"]');
+        console.log(`改进版：移除了 ${count} 个class="jammer"的font元素`);
+    }
+
+    // ==================== 改进：简繁检测函数 ====================
+    function detectChineseTypeHeuristic(text) {
+        if (!text || text.length < CONFIG.DETECTION.MIN_HEURISTIC_LENGTH) {
+            return true; // 默认繁体
+        }
+
+        const { TRADITIONAL, SIMPLIFIED } = CONFIG.CHINESE_CHARS;
+        let traditionalCount = 0;
+        let simplifiedCount = 0;
+
+        // 统计样本中的简繁字符
+        for (let i = 0; i < text.length; i++) {
+            const char = text[i];
+            if (TRADITIONAL.includes(char)) {
+                traditionalCount++;
+            }
+            if (SIMPLIFIED.includes(char)) {
+                simplifiedCount++;
+            }
+        }
+
+        console.log(`改进版启发式检测: 繁体字符数=${traditionalCount}, 简体字符数=${simplifiedCount}`);
+
+        // 如果找到的繁体字符明显多于简体字符，判断为繁体
+        if (traditionalCount > simplifiedCount * 1.5) {
+            return true;
+        }
+        // 如果找到的简体字符明显多于繁体字符，判断为简体
+        if (simplifiedCount > traditionalCount * 1.5) {
+            return false;
+        }
+
+        // 默认使用更保守的判断：如果文本包含中文，假设为繁体
+        const hasChinese = /[\u4e00-\u9fff]/.test(text);
+        return hasChinese;
+    }
+
+    async function detectChineseType(text) {
+        if (!text || text.length < CONFIG.DETECTION.MIN_TEXT_LENGTH) {
+            console.log('改进版：文本太短，使用启发式检测');
+            return detectChineseTypeHeuristic(text);
+        }
+
+        try {
+            await initConverter();
+
+            // 提取样本字符
+            const sample = text.substring(0, Math.min(CONFIG.DETECTION.SAMPLE_SIZE, text.length));
+
+            // 尝试将样本从简体转换为繁体
+            const s2tResult = converter.s2t(sample);
+            // 尝试将样本从繁体转换为简体
+            const t2sResult = converter.t2s(sample);
+
+            // 计算转换后的变化程度
+            const s2tDiff = calculateTextDifference(sample, s2tResult);
+            const t2sDiff = calculateTextDifference(sample, t2sResult);
+
+            console.log(`改进版简繁检测结果: s2t差异=${s2tDiff.toFixed(3)}, t2s差异=${t2sDiff.toFixed(3)}`);
+
+            // 添加阈值，避免微小差异导致的误判
+            if (Math.abs(s2tDiff - t2sDiff) < CONFIG.DETECTION.DIFF_THRESHOLD) {
+                console.log('改进版：差异太小，使用启发式检测');
+                return detectChineseTypeHeuristic(sample);
+            }
+
+            return t2sDiff > s2tDiff;
+        } catch (error) {
+            console.error('改进版：简繁检测失败，使用启发式检测:', error);
+            return detectChineseTypeHeuristic(text);
+        }
+    }
+
+    // ==================== 改进：下载函数 ====================
+    async function downloadNovel() {
+        // 获取小说标题
+        const titleElement = document.getElementById('thread_subject');
+        let novelTitle = titleElement ? titleElement.textContent.trim() : '未知标题';
+
+        // 清理文件名：使用工具函数
+        novelTitle = Utils.sanitizeFilename(novelTitle);
+
+        let text = '';
+
+        // 检查阅读模式是否已开启
+        const readingMode = document.getElementById('novel-reading-mode');
+        const isReadingModeActive = readingMode && readingMode.style.display === 'block';
+
+        if (isReadingModeActive) {
+            // 阅读模式已开启，从阅读模式获取内容
+            const contentDiv = document.getElementById('novel-content');
+            if (!contentDiv) {
+                showNotification('未找到小说内容！');
+                return;
+            }
+            text = contentDiv.textContent;
+        } else {
+            // 阅读模式未开启，从原始页面获取内容
+            const novelContent = extractNovelContent();
+            if (!novelContent) {
+                showNotification('未找到小说内容！');
+                return;
+            }
+
+            // 根据当前页面状态转换内容
+            const currentState = getCurrentTraditionalState();
+            if (currentState) {
+                // 页面是繁体，需要转换内容为繁体
+                text = await convertChinese(novelContent, true);
+            } else {
+                // 页面是简体，直接使用原始内容
+                text = novelContent;
+            }
+        }
+
+        // 创建Blob对象
+        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+
+        // 创建下载链接
+        const downloadLink = document.createElement('a');
+        downloadLink.href = URL.createObjectURL(blob);
+        downloadLink.download = `${novelTitle}.txt`;
+        downloadLink.style.display = 'none';
+
+        // 添加到页面并触发点击
+        document.body.appendChild(downloadLink);
+        downloadLink.click();
+
+        // 清理
+        setTimeout(() => {
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(downloadLink.href);
+            showNotification(`小说已下载: ${novelTitle}.txt`);
+        }, 100);
     }
 
     /**
