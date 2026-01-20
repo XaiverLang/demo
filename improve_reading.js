@@ -2,8 +2,8 @@
 // @name         网站阅读优化脚本
 // @namespace    http://tampermonkey.net/
 // @version      1.1
-// @description  移除隐藏内容，提取小说正文，创建简洁阅读界面。特别处理class="jammer"的font元素。新增简繁转换功能。
-// @author       Roo
+// @description  移除隐藏内容，提取小说正文，创建简洁阅读界面。新增简繁转换功能。
+// @author       x.x.x
 // @match        *://*/*
 // @grant        none
 // @require      https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/opencc-js.min.js
