@@ -6,7 +6,7 @@
 // @author       x.x.x
 // @match        *://*/*
 // @grant        none
-// @require      https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/opencc-js.min.js
+// @require      https://cdn.jsdelivr.net/npm/opencc-js@1.0.5/dist/umd/full.js
 // ==/UserScript==
 
 (function() {
